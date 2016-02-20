@@ -11,6 +11,8 @@ import android.support.v4.app.DialogFragment;
 import android.support.v4.util.Pair;
 import android.text.TextUtils;
 
+import com.google.android.gms.plus.PlusShare;
+
 import java.util.ArrayList;
 
 /**
@@ -24,17 +26,27 @@ public class ShareDialogFragment extends DialogFragment {
     public static final int FACE_BOOK_APP = 0;
     public static final int TWITTER_APP = 1;
     public static final int LINE_APP = 2;
-    public static final int CANCEL = 3;
+    public static final int GOOGLE_PLUS_APP = 3;
+    public static final int CANCEL = 4;
 
-    private final String[] sharePackages = {"com.facebook.katana", "com.twitter.android", "jp.naver.line.android"};
+    private final String[] sharePackages = {"com.facebook.katana", "com.twitter.android", "jp.naver.line.android", "com.google.android.apps.plus"};
     private ArrayList<Pair<Integer, String>> addList;
 
+    public static ShareDialogFragment newInstance(String shareUrl, String shareMessage) {
+        return newInstance(shareUrl, shareMessage, false, false);
+    }
+
     public static ShareDialogFragment newInstance(String shareUrl, String shareMessage, boolean isGooglePlayDl) {
+        return newInstance(shareUrl, shareMessage, isGooglePlayDl, false);
+    }
+
+    public static ShareDialogFragment newInstance(String shareUrl, String shareMessage, boolean isGooglePlayDl, boolean isAppVisible) {
         ShareDialogFragment shareDialogFragment = new ShareDialogFragment();
         Bundle bundle = new Bundle();
         bundle.putString("url", shareUrl);
         bundle.putString("message", shareMessage);
         bundle.putBoolean("isGooglePlayDl", isGooglePlayDl);
+        bundle.putBoolean("isAppVisible", isAppVisible);
         shareDialogFragment.setArguments(bundle);
         return shareDialogFragment;
     }
@@ -44,10 +56,10 @@ public class ShareDialogFragment extends DialogFragment {
         shareUrl = getArguments().getString("url");
         shareMessage = getArguments().getString("message");
         isGooglePlayDl = getArguments().getBoolean("isGooglePlayDl", false);
+        boolean isAppVisible = getArguments().getBoolean("isAppVisible", false);
 
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
-
-        builder.setItems(getItem(), new DialogInterface.OnClickListener() {
+        builder.setItems(getItem(isAppVisible), new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int which) {
                 Pair<Integer, String> selectPair = addList.get(which);
                 Intent intent = new Intent();
@@ -101,6 +113,20 @@ public class ShareDialogFragment extends DialogFragment {
                                 shareAppDl(LINE_APP);
                         }
                         break;
+                    case GOOGLE_PLUS_APP:
+                        if (isShareAppInstall(GOOGLE_PLUS_APP)) {
+                            PlusShare.Builder builder = new PlusShare.Builder(getActivity());
+                            builder.setType("text/plain")
+                                    .setText(shareMessage)
+                                    .setContentUrl(Uri.parse(shareUrl))
+                                    .getIntent();
+                            try {
+                                startActivity(builder.getIntent());
+                            } catch (Exception e) {
+                                if (isGooglePlayDl)
+                                    shareAppDl(GOOGLE_PLUS_APP);
+                            }
+                        }
                     case CANCEL:
                         dismiss();
                         break;
@@ -112,10 +138,21 @@ public class ShareDialogFragment extends DialogFragment {
         return builder.create();
     }
 
-    private CharSequence[] getItem() {
+    private CharSequence[] getItem(boolean isAppVisible) {
         CharSequence[] charList = new CharSequence[addList.size()];
         for (int i = 0; i < addList.size(); i++) {
-            charList[i] = addList.get(i).second;
+            // キャンセルはflg関係なく入れ込む
+            if (addList.get(i).first == CANCEL) {
+                charList[i] = addList.get(i).second;
+                continue;
+            }
+            if (isAppVisible) {
+                if (isShareAppInstall(addList.get(i).first)) {
+                    charList[i] = addList.get(i).second;
+                }
+            } else {
+                charList[i] = addList.get(i).second;
+            }
         }
         return charList;
     }
@@ -129,7 +166,7 @@ public class ShareDialogFragment extends DialogFragment {
         if (addList == null) {
             addList = new ArrayList<Pair<Integer, String>>();
         }
-        if (shareAppId > 3) {
+        if (shareAppId >= 5) {
             return this;
         }
         if (TextUtils.isEmpty(shareAppName)) {
@@ -142,6 +179,9 @@ public class ShareDialogFragment extends DialogFragment {
                     break;
                 case LINE_APP:
                     shareAppName = "Line";
+                    break;
+                case GOOGLE_PLUS_APP:
+                    shareAppName = "Google+";
                     break;
                 case CANCEL:
                     shareAppName = "キャンセル";

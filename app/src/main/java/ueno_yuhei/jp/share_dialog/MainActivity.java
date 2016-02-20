@@ -16,8 +16,9 @@ public class MainActivity extends FragmentActivity {
             @Override
             public void onClick(View v) {
                 // ShareDialog Show!
-                ShareDialogFragment shareDialogFragment = ShareDialogFragment.newInstance("http://www.yahoo.co.jp/", "yahooのページだよ", false);
+                ShareDialogFragment shareDialogFragment = ShareDialogFragment.newInstance("http://www.yahoo.co.jp/", "yahooのページだよ", false, false);
                 shareDialogFragment
+                        .add(ShareDialogFragment.GOOGLE_PLUS_APP)
                         .add(ShareDialogFragment.FACE_BOOK_APP)
                         .add(ShareDialogFragment.TWITTER_APP)
                         .add(ShareDialogFragment.LINE_APP)
