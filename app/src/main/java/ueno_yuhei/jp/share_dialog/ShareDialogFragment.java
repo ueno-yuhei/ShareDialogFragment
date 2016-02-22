@@ -114,6 +114,7 @@ public class ShareDialogFragment extends DialogFragment {
                         }
                         break;
                     case GOOGLE_PLUS_APP:
+                        // GooglePlus
                         if (isShareAppInstall(GOOGLE_PLUS_APP)) {
                             PlusShare.Builder builder = new PlusShare.Builder(getActivity());
                             builder.setType("text/plain")
